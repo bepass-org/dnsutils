@@ -3,17 +3,16 @@ package resolvers
 import (
 	"crypto/tls"
 	"github.com/bepass-org/dnsutils/internal/statute"
-	"github.com/bepass-org/dnsutils/pkg"
 	"time"
 
 	"github.com/miekg/dns"
 )
 
-// ClassicResolver represents the config options for setting up a Resolver.
+// ClassicResolver represents the config options for setting up a IResolver.
 type ClassicResolver struct {
 	client          *dns.Client
 	server          string
-	resolverOptions pkg.Options
+	resolverOptions statute.ResolverOptions
 	logger          statute.DefaultLogger
 }
 
@@ -24,7 +23,7 @@ type ClassicResolverOpts struct {
 }
 
 // NewClassicResolver accepts a list of nameservers and configures a DNS resolver.
-func NewClassicResolver(server string, classicOpts ClassicResolverOpts, resolverOpts pkg.Options) (pkg.Resolver, error) {
+func NewClassicResolver(server string, classicOpts ClassicResolverOpts, resolverOpts statute.ResolverOptions) (statute.IResolver, error) {
 	net := "udp"
 	client := &dns.Client{
 		Timeout: resolverOpts.Timeout,
@@ -62,9 +61,9 @@ func NewClassicResolver(server string, classicOpts ClassicResolverOpts, resolver
 
 // Lookup takes a dns.Question and sends them to DNS Server.
 // It parses the Response from the server in a custom output format.
-func (r *ClassicResolver) Lookup(question dns.Question) (pkg.Response, error) {
+func (r *ClassicResolver) Lookup(question dns.Question) (statute.Response, error) {
 	var (
-		rsp      pkg.Response
+		rsp      statute.Response
 		messages = PrepareMessages(question, r.resolverOptions.Ndots, r.resolverOptions.SearchList)
 	)
 	for _, msg := range messages {
@@ -104,7 +103,7 @@ func (r *ClassicResolver) Lookup(question dns.Question) (pkg.Response, error) {
 
 		// Pack questions in output.
 		for _, q := range msg.Question {
-			ques := pkg.Question{
+			ques := statute.Question{
 				Name:  q.Name,
 				Class: dns.ClassToString[q.Qclass],
 				Type:  dns.TypeToString[q.Qtype],

@@ -2,7 +2,7 @@ package resolvers
 
 import (
 	"fmt"
-	"github.com/bepass-org/dnsutils/pkg"
+	"github.com/bepass-org/dnsutils/internal/statute"
 	"strconv"
 	"strings"
 	"time"
@@ -71,8 +71,8 @@ func constructPossibleQuestions(name string, ndots int, searchList []string) []s
 
 // ParseMessage takes a `dns.Message` and returns a custom
 // Response data struct.
-func ParseMessage(msg *dns.Msg, rtt time.Duration, server string) pkg.Response {
-	var resp pkg.Response
+func ParseMessage(msg *dns.Msg, rtt time.Duration, server string) statute.Response {
+	var resp statute.Response
 	timeTaken := fmt.Sprintf("%dms", rtt.Milliseconds())
 
 	// Parse Authorities section.
@@ -95,7 +95,7 @@ func ParseMessage(msg *dns.Msg, rtt time.Duration, server string) pkg.Response {
 		qclass := dns.Class(h.Class).String()
 		ttl := strconv.FormatInt(int64(h.Ttl), 10) + "s"
 		qtype := dns.Type(h.Rrtype).String()
-		auth := pkg.Authority{
+		auth := statute.Authority{
 			Name:       name,
 			Type:       qtype,
 			TTL:        ttl,
@@ -113,7 +113,7 @@ func ParseMessage(msg *dns.Msg, rtt time.Duration, server string) pkg.Response {
 			h = a.Header()
 			// Source https://github.com/jvns/dns-lookup/blob/main/dns.go#L121.
 			parts = strings.Split(a.String(), "\t")
-			ans   = pkg.Answer{
+			ans   = statute.Answer{
 				Name:       h.Name,
 				Type:       dns.Type(h.Rrtype).String(),
 				TTL:        strconv.FormatInt(int64(h.Ttl), 10) + "s",

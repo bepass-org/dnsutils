@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/bepass-org/dnsutils/internal/statute"
-	"github.com/bepass-org/dnsutils/pkg"
 	"io"
 	"net/http"
 	"net/url"
@@ -18,12 +17,12 @@ import (
 type DOHResolver struct {
 	client          *http.Client
 	server          string
-	resolverOptions pkg.Options
-	logger          statute.DefaultLogger
+	resolverOptions statute.ResolverOptions
+	logger          statute.Logger
 }
 
 // NewDOHResolver accepts a nameserver address and configures a DOH based resolver.
-func NewDOHResolver(server string, resolverOpts pkg.Options) (pkg.Resolver, error) {
+func NewDOHResolver(server string, resolverOpts statute.ResolverOptions) (statute.IResolver, error) {
 	// do basic validation
 	u, err := url.ParseRequestURI(server)
 	if err != nil {
@@ -41,9 +40,9 @@ func NewDOHResolver(server string, resolverOpts pkg.Options) (pkg.Resolver, erro
 
 // Lookup takes a dns.Question and sends them to DNS Server.
 // It parses the Response from the server in a custom output format.
-func (r *DOHResolver) Lookup(question dns.Question) (pkg.Response, error) {
+func (r *DOHResolver) Lookup(question dns.Question) (statute.Response, error) {
 	var (
-		rsp      pkg.Response
+		rsp      statute.Response
 		messages = PrepareMessages(question, r.resolverOptions.Ndots, r.resolverOptions.SearchList)
 	)
 
@@ -91,7 +90,7 @@ func (r *DOHResolver) Lookup(question dns.Question) (pkg.Response, error) {
 		}
 		// pack questions in output.
 		for _, q := range msg.Question {
-			ques := pkg.Question{
+			ques := statute.Question{
 				Name:  q.Name,
 				Class: dns.ClassToString[q.Qclass],
 				Type:  dns.TypeToString[q.Qtype],

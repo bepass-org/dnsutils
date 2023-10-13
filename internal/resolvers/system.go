@@ -2,31 +2,31 @@ package resolvers
 
 import (
 	"fmt"
-	"github.com/bepass-org/dnsutils/pkg"
+	"github.com/bepass-org/dnsutils/internal/statute"
 	"github.com/miekg/dns"
 	"net"
 )
 
-const defaultTTL = "3600"
-
-// SystemResolver represents the config options for setting up a Resolver.
+// SystemResolver represents the config options for setting up a IResolver.
 type SystemResolver struct {
-	resolverOptions pkg.Options
+	defaultTTL      string
+	resolverOptions statute.ResolverOptions
 }
 
 // SystemResolverOpts holds options for setting up a System resolver.
 type SystemResolverOpts struct{}
 
 // NewSystemResolver accepts a list of nameservers and configures a DNS resolver.
-func NewSystemResolver(resolverOpts pkg.Options) (pkg.Resolver, error) {
+func NewSystemResolver(resolverOpts statute.ResolverOptions) (statute.IResolver, error) {
 	return &SystemResolver{
+		defaultTTL:      string(rune(statute.DefaultTTL)),
 		resolverOptions: resolverOpts,
 	}, nil
 }
 
 // Lookup takes a dns.Question and sends them to DNS Server.
-func (r *SystemResolver) Lookup(question dns.Question) (pkg.Response, error) {
-	var rsp pkg.Response
+func (r *SystemResolver) Lookup(question dns.Question) (statute.Response, error) {
+	var rsp statute.Response
 	ips, err := net.LookupIP(question.Name)
 	if err != nil {
 		return rsp, err
@@ -46,30 +46,30 @@ func (r *SystemResolver) Lookup(question dns.Question) (pkg.Response, error) {
 
 	// Print preferred IP version (e.g., IPv4)
 	if len(ipv4Addresses) > 0 && r.resolverOptions.Prefer == "ipv4" {
-		rsp.Answers = []pkg.Answer{
+		rsp.Answers = []statute.Answer{
 			{
 				Name:       question.Name,
 				Type:       "A",
-				Class:      "IN",       // Set to IN for Internet class
-				TTL:        defaultTTL, // Set TTL to 1 hour (in seconds)
+				Class:      "IN",         // Set to IN for Internet class
+				TTL:        r.defaultTTL, // Set TTL to 1 hour (in seconds)
 				Address:    ipv4Addresses[0].String(),
 				Status:     "Success",
 				RTT:        "N/A",
-				Nameserver: "System Resolver",
+				Nameserver: "System IResolver",
 			},
 		}
 	} else if len(ipv6Addresses) > 0 && r.resolverOptions.Prefer == "ipv4" {
-		ipv6Answers := make([]pkg.Answer, len(ipv6Addresses))
+		ipv6Answers := make([]statute.Answer, len(ipv6Addresses))
 		for i, ip := range ipv6Addresses {
-			ipv6Answers[i] = pkg.Answer{
+			ipv6Answers[i] = statute.Answer{
 				Name:       question.Name,
 				Type:       "AAAA",
-				Class:      "IN",       // Set to IN for Internet class
-				TTL:        defaultTTL, // Set TTL to 1 hour (in seconds)
+				Class:      "IN",         // Set to IN for Internet class
+				TTL:        r.defaultTTL, // Set TTL to 1 hour (in seconds)
 				Address:    ip.String(),
 				Status:     "Success",
 				RTT:        "N/A",
-				Nameserver: "System Resolver",
+				Nameserver: "System IResolver",
 			}
 		}
 		rsp.Answers = append(rsp.Answers, ipv6Answers...)

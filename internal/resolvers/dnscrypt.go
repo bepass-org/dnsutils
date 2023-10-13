@@ -3,17 +3,16 @@ package resolvers
 import (
 	"github.com/bepass-org/dnsutils/internal/dnscrypt"
 	"github.com/bepass-org/dnsutils/internal/statute"
-	"github.com/bepass-org/dnsutils/pkg"
 	"github.com/miekg/dns"
 	"time"
 )
 
-// DNSCryptResolver represents the config options for setting up a Resolver.
+// DNSCryptResolver represents the config options for setting up a IResolver.
 type DNSCryptResolver struct {
 	client          *dnscrypt.Client
 	server          string
 	resolverInfo    *dnscrypt.ResolverInfo
-	resolverOptions pkg.Options
+	resolverOptions statute.ResolverOptions
 	logger          statute.DefaultLogger
 }
 
@@ -23,7 +22,7 @@ type DNSCryptResolverOpts struct {
 }
 
 // NewDNSCryptResolver accepts a list of nameservers and configures a DNS resolver.
-func NewDNSCryptResolver(server string, dnscryptOpts DNSCryptResolverOpts, resolverOpts pkg.Options) (pkg.Resolver, error) {
+func NewDNSCryptResolver(server string, dnscryptOpts DNSCryptResolverOpts, resolverOpts statute.ResolverOptions) (statute.IResolver, error) {
 	net := "udp"
 	if dnscryptOpts.UseTCP {
 		net = "tcp"
@@ -44,9 +43,9 @@ func NewDNSCryptResolver(server string, dnscryptOpts DNSCryptResolverOpts, resol
 
 // Lookup takes a dns.Question and sends them to DNS Server.
 // It parses the Response from the server in a custom output format.
-func (r *DNSCryptResolver) Lookup(question dns.Question) (pkg.Response, error) {
+func (r *DNSCryptResolver) Lookup(question dns.Question) (statute.Response, error) {
 	var (
-		rsp      pkg.Response
+		rsp      statute.Response
 		messages = PrepareMessages(question, r.resolverOptions.Ndots, r.resolverOptions.SearchList)
 	)
 	for _, msg := range messages {
@@ -63,7 +62,7 @@ func (r *DNSCryptResolver) Lookup(question dns.Question) (pkg.Response, error) {
 		rtt := time.Since(now)
 		// pack questions in output.
 		for _, q := range msg.Question {
-			ques := pkg.Question{
+			ques := statute.Question{
 				Name:  q.Name,
 				Class: dns.ClassToString[q.Qclass],
 				Type:  dns.TypeToString[q.Qtype],
