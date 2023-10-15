@@ -80,7 +80,6 @@ type ResolverOptions struct {
 	UseIPv6            bool
 	SearchList         []string
 	Ndots              int
-	Strategy           string
 	Prefer             string
 	Timeout            time.Duration
 	InsecureSkipVerify bool

@@ -18,7 +18,7 @@ type DOHResolver struct {
 	client          *http.Client
 	server          string
 	resolverOptions statute.ResolverOptions
-	logger          statute.Logger
+	logger          statute.DefaultLogger
 }
 
 // NewDOHResolver accepts a nameserver address and configures a DOH based resolver.
@@ -47,7 +47,7 @@ func (r *DOHResolver) Lookup(question dns.Question) (statute.Response, error) {
 	)
 
 	for _, msg := range messages {
-		r.logger.Debug("attempting to resolve %s, ns: %s, ndots: %s",
+		r.logger.Debug("attempting to resolve %s, ns: %s, ndots: %d",
 			msg.Question[0].Name,
 			r.server,
 			r.resolverOptions.Ndots,

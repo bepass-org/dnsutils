@@ -1,9 +1,8 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"net"
+	"github.com/bepass-org/dnsutils"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
@@ -11,8 +10,16 @@ import (
 
 var serverAddress string
 
+var resolver *dnsutils.Resolver
+
 func main() {
-	fmt.Println("Welcome to Go NSLookup!")
+	resolver = dnsutils.NewResolver()
+	err := resolver.SetDNSServer("https://8.8.8.8/dns-query")
+	if err != nil {
+		fmt.Println("Error setting DNS server:", err)
+		return
+	}
+	fmt.Println("Welcome to Bepass NSLookup!")
 	p := prompt.New(executor, completer, prompt.OptionPrefix("> "))
 	p.Run()
 }
@@ -27,6 +34,11 @@ func executor(s string) {
 	switch tokens[0] {
 	case "server":
 		serverAddress = tokens[1]
+		err := resolver.SetDNSServer(serverAddress)
+		if err != nil {
+			fmt.Println("Error setting DNS server:", err)
+			return
+		}
 		fmt.Println("Server set to:", serverAddress)
 	case "domain":
 		printIPs(tokens[1])
@@ -44,24 +56,7 @@ func completer(d prompt.Document) []prompt.Suggest {
 }
 
 func printIPs(domain string) {
-	var resolver *net.Resolver
-	if serverAddress != "" {
-		address := serverAddress
-		if !strings.Contains(serverAddress, ":") {
-			address = serverAddress + ":53"
-		}
-		resolver = &net.Resolver{
-			PreferGo:     true,
-			StrictErrors: false,
-			Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
-				return net.Dial("udp", address)
-			},
-		}
-	} else {
-		resolver = net.DefaultResolver
-	}
-
-	ips, err := resolver.LookupIP(context.Background(), "ip", domain)
+	ips, err := resolver.LookupIP(domain)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return

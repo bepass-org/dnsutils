@@ -23,18 +23,18 @@ func DefaultHTTPClient() *http.Client {
 // default logger
 
 type Logger interface {
-	Debug(v ...interface{})
-	Error(v ...interface{})
+	Debug(s string, v ...interface{})
+	Error(s string, v ...interface{})
 }
 
 type DefaultLogger struct{}
 
-func (l DefaultLogger) Debug(v ...interface{}) {
-	fmt.Println(v...)
+func (l DefaultLogger) Debug(s string, v ...interface{}) {
+	fmt.Printf(fmt.Sprintf("%s\r\n", s), v...)
 }
 
-func (l DefaultLogger) Error(v ...interface{}) {
-	fmt.Println(v...)
+func (l DefaultLogger) Error(s string, v ...interface{}) {
+	fmt.Printf(fmt.Sprintf("%s\r\n", s), v...)
 }
 
 // default cache

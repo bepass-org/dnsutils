@@ -1,4 +1,4 @@
-package pkg
+package dnsutils
 
 import (
 	"errors"
@@ -20,14 +20,13 @@ type Resolver struct {
 func NewResolver(options ...Option) *Resolver {
 	p := &Resolver{
 		options: statute.ResolverOptions{
-			UseIPv4:            false,
-			UseIPv6:            false,
+			UseIPv4:            true,
+			UseIPv6:            true,
 			SearchList:         nil,
-			Ndots:              0,
-			Strategy:           "",
+			Ndots:              1,
 			Prefer:             "",
-			Timeout:            0,
-			InsecureSkipVerify: false,
+			Timeout:            10 * time.Minute,
+			InsecureSkipVerify: true,
 			TLSHostname:        "",
 		},
 		cache:  statute.DefaultCache{},
@@ -74,6 +73,12 @@ func WithPrefer(prefer string) Option {
 	}
 }
 
+func WithTLSHostname(tlsHostname string) Option {
+	return func(r *Resolver) {
+		r.options.TLSHostname = tlsHostname
+	}
+}
+
 func WithTimeout(timeout time.Duration) Option {
 	return func(r *Resolver) {
 		r.options.Timeout = timeout
@@ -83,12 +88,6 @@ func WithTimeout(timeout time.Duration) Option {
 func WithInsecureSkipVerify(insecureSkipVerify bool) Option {
 	return func(r *Resolver) {
 		r.options.InsecureSkipVerify = insecureSkipVerify
-	}
-}
-
-func WithTLSHostname(tlsHostname string) Option {
-	return func(r *Resolver) {
-		r.options.TLSHostname = tlsHostname
 	}
 }
 
@@ -142,8 +141,8 @@ func (r *Resolver) SetDNSServer(address string) error {
 	return err
 }
 
-// Resolve resolves the FQDN to an IP address using the specified resolution mechanism.
-func (r *Resolver) Resolve(fqdn string) ([]string, error) {
+// LookupIP resolves the FQDN to an IP address using the specified resolution mechanism.
+func (r *Resolver) LookupIP(fqdn string) ([]string, error) {
 	// CheckHosts checks if a given domain exists in the local resolver's hosts file
 	// and returns the corresponding IP address if found, or an empty string if not.
 	if ips, ok := r.hosts[fqdn]; ok {
@@ -173,7 +172,7 @@ func (r *Resolver) Resolve(fqdn string) ([]string, error) {
 	}
 	r.logger.Debug("resolved %s to %s", fqdn, response.Answers[0].Address)
 	if response.Answers[0].Type == "CNAME" {
-		ip, err := r.Resolve(response.Answers[0].Address)
+		ip, err := r.LookupIP(response.Answers[0].Address)
 		if err != nil {
 			return nil, err
 		}

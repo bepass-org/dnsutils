@@ -49,7 +49,7 @@ func (r *DNSCryptResolver) Lookup(question dns.Question) (statute.Response, erro
 		messages = PrepareMessages(question, r.resolverOptions.Ndots, r.resolverOptions.SearchList)
 	)
 	for _, msg := range messages {
-		r.logger.Debug("attempting to resolve %s, ns: %s, ndots: %s",
+		r.logger.Debug("attempting to resolve %s, ns: %s, ndots: %d",
 			msg.Question[0].Name,
 			r.server,
 			r.resolverOptions.Ndots,

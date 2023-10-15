@@ -3,6 +3,7 @@ package resolvers
 import (
 	"crypto/tls"
 	"github.com/bepass-org/dnsutils/internal/statute"
+	"strings"
 	"time"
 
 	"github.com/miekg/dns"
@@ -34,12 +35,12 @@ func NewClassicResolver(server string, classicOpts ClassicResolverOpts, resolver
 		net = "tcp"
 	}
 
-	if resolverOpts.UseIPv4 {
+	/*if resolverOpts.UseIPv4 {
 		net = net + "4"
 	}
 	if resolverOpts.UseIPv6 {
 		net = net + "6"
-	}
+	}*/
 
 	if classicOpts.UseTLS {
 		net = net + "-tls"
@@ -52,9 +53,12 @@ func NewClassicResolver(server string, classicOpts ClassicResolverOpts, resolver
 
 	client.Net = net
 
+	srv := strings.Replace(server, "udp://", "", -1)
+	srv = strings.Replace(srv, "tcp://", "", -1)
+
 	return &ClassicResolver{
 		client:          client,
-		server:          server,
+		server:          srv,
 		resolverOptions: resolverOpts,
 	}, nil
 }
@@ -68,7 +72,7 @@ func (r *ClassicResolver) Lookup(question dns.Question) (statute.Response, error
 	)
 	for _, msg := range messages {
 
-		r.logger.Debug("attempting to resolve %s, ns: %s, ndots: %s",
+		r.logger.Debug("attempting to resolve %s, ns: %s, ndots: %d",
 			msg.Question[0].Name,
 			r.server,
 			r.resolverOptions.Ndots,
