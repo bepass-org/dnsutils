@@ -80,6 +80,12 @@ func WithTLSHostname(tlsHostname string) Option {
 	}
 }
 
+func WithLogger(logger statute.Logger) Option {
+	return func(r *Resolver) {
+		r.options.Logger = logger
+	}
+}
+
 func WithTimeout(timeout time.Duration) Option {
 	return func(r *Resolver) {
 		r.options.Timeout = timeout
