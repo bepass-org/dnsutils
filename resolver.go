@@ -28,6 +28,7 @@ func NewResolver(options ...Option) *Resolver {
 			Timeout:            10 * time.Minute,
 			InsecureSkipVerify: true,
 			TLSHostname:        "",
+			Logger:             statute.DefaultLogger{},
 		},
 		cache:  statute.DefaultCache{},
 		logger: statute.DefaultLogger{},

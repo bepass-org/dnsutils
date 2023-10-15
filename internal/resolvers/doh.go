@@ -15,10 +15,9 @@ import (
 
 // DOHResolver represents the config options for setting up a DOH based resolver.
 type DOHResolver struct {
-	client          *http.Client
-	server          string
-	resolverOptions statute.ResolverOptions
-	logger          statute.DefaultLogger
+	client *http.Client
+	server string
+	opts   statute.ResolverOptions
 }
 
 // NewDOHResolver accepts a nameserver address and configures a DOH based resolver.
@@ -32,9 +31,9 @@ func NewDOHResolver(server string, resolverOpts statute.ResolverOptions) (statut
 		return nil, fmt.Errorf("missing https in %s", server)
 	}
 	return &DOHResolver{
-		client:          statute.DefaultHTTPClient(),
-		server:          server,
-		resolverOptions: resolverOpts,
+		client: statute.DefaultHTTPClient(),
+		server: server,
+		opts:   resolverOpts,
 	}, nil
 }
 
@@ -43,14 +42,14 @@ func NewDOHResolver(server string, resolverOpts statute.ResolverOptions) (statut
 func (r *DOHResolver) Lookup(question dns.Question) (statute.Response, error) {
 	var (
 		rsp      statute.Response
-		messages = PrepareMessages(question, r.resolverOptions.Ndots, r.resolverOptions.SearchList)
+		messages = PrepareMessages(question, r.opts.Ndots, r.opts.SearchList)
 	)
 
 	for _, msg := range messages {
-		r.logger.Debug("attempting to resolve %s, ns: %s, ndots: %d",
+		r.opts.Logger.Debug("attempting to resolve %s, ns: %s, ndots: %d",
 			msg.Question[0].Name,
 			r.server,
-			r.resolverOptions.Ndots,
+			r.opts.Ndots,
 		)
 		// get the DNS Message in wire format.
 		b, err := msg.Pack()

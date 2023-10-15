@@ -9,8 +9,8 @@ import (
 
 // SystemResolver represents the config options for setting up a IResolver.
 type SystemResolver struct {
-	defaultTTL      string
-	resolverOptions statute.ResolverOptions
+	defaultTTL string
+	opts       statute.ResolverOptions
 }
 
 // SystemResolverOpts holds options for setting up a System resolver.
@@ -19,8 +19,8 @@ type SystemResolverOpts struct{}
 // NewSystemResolver accepts a list of nameservers and configures a DNS resolver.
 func NewSystemResolver(resolverOpts statute.ResolverOptions) (statute.IResolver, error) {
 	return &SystemResolver{
-		defaultTTL:      string(rune(statute.DefaultTTL)),
-		resolverOptions: resolverOpts,
+		defaultTTL: string(rune(statute.DefaultTTL)),
+		opts:       resolverOpts,
 	}, nil
 }
 
@@ -45,7 +45,7 @@ func (r *SystemResolver) Lookup(question dns.Question) (statute.Response, error)
 	}
 
 	// Print preferred IP version (e.g., IPv4)
-	if len(ipv4Addresses) > 0 && r.resolverOptions.Prefer == "ipv4" {
+	if len(ipv4Addresses) > 0 && r.opts.Prefer == "ipv4" {
 		rsp.Answers = []statute.Answer{
 			{
 				Name:       question.Name,
@@ -58,7 +58,7 @@ func (r *SystemResolver) Lookup(question dns.Question) (statute.Response, error)
 				Nameserver: "System IResolver",
 			},
 		}
-	} else if len(ipv6Addresses) > 0 && r.resolverOptions.Prefer == "ipv4" {
+	} else if len(ipv6Addresses) > 0 && r.opts.Prefer == "ipv4" {
 		ipv6Answers := make([]statute.Answer, len(ipv6Addresses))
 		for i, ip := range ipv6Addresses {
 			ipv6Answers[i] = statute.Answer{

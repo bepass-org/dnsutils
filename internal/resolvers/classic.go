@@ -11,10 +11,9 @@ import (
 
 // ClassicResolver represents the config options for setting up a IResolver.
 type ClassicResolver struct {
-	client          *dns.Client
-	server          string
-	resolverOptions statute.ResolverOptions
-	logger          statute.DefaultLogger
+	client *dns.Client
+	server string
+	opts   statute.ResolverOptions
 }
 
 // ClassicResolverOpts holds options for setting up a Classic resolver.
@@ -57,9 +56,9 @@ func NewClassicResolver(server string, classicOpts ClassicResolverOpts, resolver
 	srv = strings.Replace(srv, "tcp://", "", -1)
 
 	return &ClassicResolver{
-		client:          client,
-		server:          srv,
-		resolverOptions: resolverOpts,
+		client: client,
+		server: srv,
+		opts:   resolverOpts,
 	}, nil
 }
 
@@ -68,14 +67,14 @@ func NewClassicResolver(server string, classicOpts ClassicResolverOpts, resolver
 func (r *ClassicResolver) Lookup(question dns.Question) (statute.Response, error) {
 	var (
 		rsp      statute.Response
-		messages = PrepareMessages(question, r.resolverOptions.Ndots, r.resolverOptions.SearchList)
+		messages = PrepareMessages(question, r.opts.Ndots, r.opts.SearchList)
 	)
 	for _, msg := range messages {
 
-		r.logger.Debug("attempting to resolve %s, ns: %s, ndots: %d",
+		r.opts.Logger.Debug("attempting to resolve %s, ns: %s, ndots: %d",
 			msg.Question[0].Name,
 			r.server,
-			r.resolverOptions.Ndots,
+			r.opts.Ndots,
 		)
 
 		// Since the library doesn't include tcp.Dial time,
@@ -99,7 +98,7 @@ func (r *ClassicResolver) Lookup(question dns.Question) (statute.Response, error
 			default:
 				r.client.Net = "tcp"
 			}
-			r.logger.Debug("response truncated; retrying now, protocol: %s",
+			r.opts.Logger.Debug("response truncated; retrying now, protocol: %s",
 				r.client.Net,
 			)
 			return r.Lookup(question)

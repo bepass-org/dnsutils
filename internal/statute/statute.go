@@ -84,6 +84,7 @@ type ResolverOptions struct {
 	Timeout            time.Duration
 	InsecureSkipVerify bool
 	TLSHostname        string
+	Logger             Logger
 }
 
 // Hosts represents a domain-to-IP mapping entry in the local hosts file.

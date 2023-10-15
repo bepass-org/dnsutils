@@ -9,11 +9,10 @@ import (
 
 // DNSCryptResolver represents the config options for setting up a IResolver.
 type DNSCryptResolver struct {
-	client          *dnscrypt.Client
-	server          string
-	resolverInfo    *dnscrypt.ResolverInfo
-	resolverOptions statute.ResolverOptions
-	logger          statute.DefaultLogger
+	client       *dnscrypt.Client
+	server       string
+	resolverInfo *dnscrypt.ResolverInfo
+	opts         statute.ResolverOptions
 }
 
 // DNSCryptResolverOpts holds options for setting up a DNSCrypt resolver.
@@ -34,10 +33,10 @@ func NewDNSCryptResolver(server string, dnscryptOpts DNSCryptResolverOpts, resol
 		return nil, err
 	}
 	return &DNSCryptResolver{
-		client:          client,
-		resolverInfo:    resolverInfo,
-		server:          resolverInfo.ServerAddress,
-		resolverOptions: resolverOpts,
+		client:       client,
+		resolverInfo: resolverInfo,
+		server:       resolverInfo.ServerAddress,
+		opts:         resolverOpts,
 	}, nil
 }
 
@@ -46,13 +45,13 @@ func NewDNSCryptResolver(server string, dnscryptOpts DNSCryptResolverOpts, resol
 func (r *DNSCryptResolver) Lookup(question dns.Question) (statute.Response, error) {
 	var (
 		rsp      statute.Response
-		messages = PrepareMessages(question, r.resolverOptions.Ndots, r.resolverOptions.SearchList)
+		messages = PrepareMessages(question, r.opts.Ndots, r.opts.SearchList)
 	)
 	for _, msg := range messages {
-		r.logger.Debug("attempting to resolve %s, ns: %s, ndots: %d",
+		r.opts.Logger.Debug("attempting to resolve %s, ns: %s, ndots: %d",
 			msg.Question[0].Name,
 			r.server,
-			r.resolverOptions.Ndots,
+			r.opts.Ndots,
 		)
 		now := time.Now()
 		in, err := r.client.Exchange(&msg, r.resolverInfo)
