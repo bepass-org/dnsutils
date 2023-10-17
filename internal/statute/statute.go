@@ -2,6 +2,7 @@ package statute
 
 import (
 	"github.com/miekg/dns"
+	"net"
 	"strings"
 	"time"
 )
@@ -17,6 +18,11 @@ type IResolver interface {
 // based on its URI, handling common misspellings and case variations.
 func GetDNSType(uri string) string {
 	normalized := strings.ToLower(uri)
+
+	addr := net.ParseIP(uri)
+	if addr != nil {
+		normalized = "udp://" + normalized + ":53"
+	}
 
 	if strings.HasPrefix(normalized, "udp://") {
 		return "udp"

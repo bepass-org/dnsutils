@@ -139,7 +139,7 @@ func (r *Resolver) SetDNSServer(address string) error {
 				UseTCP: true,
 			}, r.options)
 	default:
-		r.logger.Debug("initiating system resolver" + nsSrvType)
+		r.logger.Debug("initiating system resolver")
 		r.resolver, err = resolvers.NewSystemResolver(r.options)
 		if nsSrvType == "unknown" {
 			err = errors.New("unknown dns server type! using default system resolver as fallback")
