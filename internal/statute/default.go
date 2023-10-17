@@ -1,8 +1,10 @@
 package statute
 
 import (
+	"context"
 	"fmt"
 	"github.com/bepass-org/dnsutils/internal/cache"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -16,7 +18,22 @@ const DefaultTTL = 60
 
 func DefaultHTTPClient() *http.Client {
 	return &http.Client{
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				return DefaultDialer().Dial(network, addr)
+			},
+		},
 		Timeout: 10 * time.Second,
+	}
+}
+
+// default Dialer
+
+func DefaultDialer() *net.Dialer {
+	return &net.Dialer{
+		Timeout:   5 * time.Second, // Connection timeout
+		KeepAlive: 5 * time.Second, // KeepAlive period
+		// Add other custom settings as needed
 	}
 }
 

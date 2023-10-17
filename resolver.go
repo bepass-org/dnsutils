@@ -20,12 +20,12 @@ type Resolver struct {
 func NewResolver(options ...Option) *Resolver {
 	p := &Resolver{
 		options: statute.ResolverOptions{
-			UseIPv4:            true,
-			UseIPv6:            true,
+			UseIPv4:            false,
+			UseIPv6:            false,
 			SearchList:         nil,
 			Ndots:              1,
 			Prefer:             "",
-			Timeout:            10 * time.Minute,
+			Timeout:            1 * time.Minute,
 			InsecureSkipVerify: true,
 			TLSHostname:        "",
 			Logger:             statute.DefaultLogger{},
@@ -139,11 +139,11 @@ func (r *Resolver) SetDNSServer(address string) error {
 				UseTCP: true,
 			}, r.options)
 	default:
-		if strings.ToLower(nsSrvType) != "system" {
+		r.logger.Debug("initiating system resolver" + nsSrvType)
+		r.resolver, err = resolvers.NewSystemResolver(r.options)
+		if nsSrvType == "unknown" {
 			err = errors.New("unknown dns server type! using default system resolver as fallback")
 		}
-		r.logger.Debug("initiating system resolver")
-		r.resolver, err = resolvers.NewSystemResolver(r.options)
 	}
 	return err
 }
@@ -177,6 +177,11 @@ func (r *Resolver) LookupIP(fqdn string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if len(response.Answers) == 0 {
+		return nil, errors.New("no answers found")
+	}
+
 	r.logger.Debug("resolved %s to %s", fqdn, response.Answers[0].Address)
 	if response.Answers[0].Type == "CNAME" {
 		ip, err := r.LookupIP(response.Answers[0].Address)

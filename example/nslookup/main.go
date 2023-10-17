@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/bepass-org/dnsutils"
+	"os"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
@@ -26,13 +27,17 @@ func main() {
 
 func executor(s string) {
 	tokens := strings.SplitN(s, " ", 2)
-	if len(tokens) < 2 {
+	if len(tokens) < 1 {
 		fmt.Println("Invalid input.")
 		return
 	}
 
 	switch tokens[0] {
 	case "server":
+		if len(tokens) < 2 {
+			fmt.Println("Invalid input.")
+			return
+		}
 		serverAddress = tokens[1]
 		err := resolver.SetDNSServer(serverAddress)
 		if err != nil {
@@ -40,10 +45,16 @@ func executor(s string) {
 			return
 		}
 		fmt.Println("Server set to:", serverAddress)
+	case "exit":
+		os.Exit(0)
 	case "domain":
+		if len(tokens) < 2 {
+			fmt.Println("Invalid input.")
+			return
+		}
 		printIPs(tokens[1])
 	default:
-		fmt.Println("Unknown command. Use 'server' or 'domain'.")
+		printIPs(tokens[0])
 	}
 }
 
@@ -51,6 +62,7 @@ func completer(d prompt.Document) []prompt.Suggest {
 	s := []prompt.Suggest{
 		{Text: "server", Description: "Set the DNS server address"},
 		{Text: "domain", Description: "Resolve domain for ip addresses"},
+		{Text: "exit", Description: "Exit the program"},
 	}
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }

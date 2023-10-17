@@ -3,6 +3,7 @@ package resolvers
 import (
 	"crypto/tls"
 	"github.com/bepass-org/dnsutils/internal/statute"
+	"net/url"
 	"strings"
 	"time"
 
@@ -34,12 +35,15 @@ func NewClassicResolver(server string, classicOpts ClassicResolverOpts, resolver
 		net = "tcp"
 	}
 
-	/*if resolverOpts.UseIPv4 {
+	if resolverOpts.UseIPv4 {
 		net = net + "4"
 	}
 	if resolverOpts.UseIPv6 {
 		net = net + "6"
-	}*/
+	}
+
+	// if the both use ipv4 and ipv6, then net will be just udp or tcp
+	net = strings.Replace(net, "46", "", -1)
 
 	if classicOpts.UseTLS {
 		net = net + "-tls"
@@ -51,6 +55,15 @@ func NewClassicResolver(server string, classicOpts ClassicResolverOpts, resolver
 	}
 
 	client.Net = net
+
+	u, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	if !strings.HasPrefix(server, u.Host+":") {
+		server = server + ":53"
+	}
 
 	srv := strings.Replace(server, "udp://", "", -1)
 	srv = strings.Replace(srv, "tcp://", "", -1)
