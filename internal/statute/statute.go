@@ -1,8 +1,10 @@
 package statute
 
 import (
+	"github.com/bepass-org/dnsutils/internal/dialer"
 	"github.com/miekg/dns"
 	"net"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -21,7 +23,7 @@ func GetDNSType(uri string) string {
 
 	addr := net.ParseIP(uri)
 	if addr != nil {
-		normalized = "udp://" + normalized + ":53"
+		return "udp"
 	}
 
 	if strings.HasPrefix(normalized, "udp://") {
@@ -79,6 +81,9 @@ type Authority struct {
 	Nameserver string `json:"nameserver"`
 }
 
+// Hosts represents a domain-to-IP mapping entry in the local hosts file.
+type Hosts map[string][]string
+
 // ResolverOptions represent a set of common options
 // to configure a IResolver.
 type ResolverOptions struct {
@@ -91,7 +96,9 @@ type ResolverOptions struct {
 	InsecureSkipVerify bool
 	TLSHostname        string
 	Logger             Logger
+	Dialer             *dialer.AppDialer
+	TLSDialer          *dialer.AppTLSDialer
+	RawDialerFunc      dialer.TDialerFunc
+	TLSDialerFunc      dialer.TDialerFunc
+	HttpClient         *http.Client
 }
-
-// Hosts represents a domain-to-IP mapping entry in the local hosts file.
-type Hosts map[string][]string

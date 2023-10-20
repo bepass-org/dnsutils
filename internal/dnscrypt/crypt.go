@@ -1,9 +1,11 @@
 package dnscrypt
 
 import (
+	"context"
 	"crypto/ed25519"
 	"encoding/binary"
 	"fmt"
+	"github.com/bepass-org/dnsutils/internal/dialer"
 	"net"
 	"strings"
 	"time"
@@ -16,8 +18,9 @@ import (
 
 // Client is a DNSCrypt resolver client
 type Client struct {
-	Net     string        // protocol (can be "udp" or "tcp", by default - "udp")
-	Timeout time.Duration // read/write timeout
+	Net        string        // protocol (can be "udp" or "tcp", by default - "udp")
+	Timeout    time.Duration // read/write timeout
+	DialerFunc dialer.TDialerFunc
 
 	// UDPSize is the maximum size of a DNS response (or query) this client can
 	// sent or receive. If not set, we use dns.MinMsgSize by default.
@@ -93,8 +96,14 @@ func (c *Client) Exchange(m *dns.Msg, resolverInfo *ResolverInfo) (resp *dns.Msg
 	if c.Net == "tcp" {
 		network = "tcp"
 	}
+	var conn net.Conn
 
-	conn, err := net.Dial(network, resolverInfo.ServerAddress)
+	if c.DialerFunc == nil {
+		conn, err = net.Dial(network, resolverInfo.ServerAddress)
+	} else {
+		conn, err = c.DialerFunc(context.Background(), network, resolverInfo.ServerAddress)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("dialing: %w", err)
 	}

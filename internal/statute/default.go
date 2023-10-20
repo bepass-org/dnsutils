@@ -2,8 +2,10 @@ package statute
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"github.com/bepass-org/dnsutils/internal/cache"
+	"github.com/bepass-org/dnsutils/internal/dialer"
 	"net"
 	"net/http"
 	"sync"
@@ -16,25 +18,61 @@ const DefaultTTL = 60
 
 // default http client
 
-func DefaultHTTPClient() *http.Client {
+func DefaultHTTPClient(rawDialer dialer.TDialerFunc, tlsDialer dialer.TDialerFunc) *http.Client {
+	var defaultDialer dialer.TDialerFunc
+	if rawDialer == nil {
+		defaultDialer = DefaultDialerFunc
+	} else {
+		defaultDialer = rawDialer
+	}
+	var defaultTLSDialer dialer.TDialerFunc
+	if rawDialer == nil {
+		defaultTLSDialer = DefaultTLSDialerFunc
+	} else {
+		defaultTLSDialer = tlsDialer
+	}
 	return &http.Client{
 		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				return DefaultDialer().Dial(network, addr)
-			},
+			DialContext:       defaultDialer,
+			DialTLSContext:    defaultTLSDialer,
+			ForceAttemptHTTP2: false,
 		},
 		Timeout: 10 * time.Second,
 	}
 }
 
-// default Dialer
-
-func DefaultDialer() *net.Dialer {
-	return &net.Dialer{
+func DefaultDialerFunc(_ context.Context, network, addr string) (net.Conn, error) {
+	d := &net.Dialer{
 		Timeout:   5 * time.Second, // Connection timeout
 		KeepAlive: 5 * time.Second, // KeepAlive period
 		// Add other custom settings as needed
 	}
+	return d.Dial(network, addr)
+}
+
+// DefaultTLSDialerFunc is a custom TLS dialer function
+func DefaultTLSDialerFunc(ctx context.Context, network, addr string) (net.Conn, error) {
+	// Dial the raw connection using the default dialer
+	rawConn, err := DefaultDialerFunc(ctx, network, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	// Initiate a TLS handshake over the connection
+	tlsConn := tls.Client(rawConn, &tls.Config{
+		ServerName: addr,
+	})
+	err = tlsConn.Handshake()
+	if err != nil {
+		err := rawConn.Close()
+		if err != nil {
+			return nil, err
+		}
+		return nil, err
+	}
+
+	// Return the established TLS connection
+	return tlsConn, nil
 }
 
 // default logger

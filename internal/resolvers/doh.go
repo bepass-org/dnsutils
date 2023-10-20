@@ -31,7 +31,7 @@ func NewDOHResolver(server string, resolverOpts statute.ResolverOptions) (statut
 		return nil, fmt.Errorf("missing https in %s", server)
 	}
 	return &DOHResolver{
-		client: statute.DefaultHTTPClient(),
+		client: resolverOpts.HttpClient,
 		server: server,
 		opts:   resolverOpts,
 	}, nil

@@ -2,9 +2,11 @@ package dnsutils
 
 import (
 	"errors"
+	"github.com/bepass-org/dnsutils/internal/dialer"
 	"github.com/bepass-org/dnsutils/internal/resolvers"
 	"github.com/bepass-org/dnsutils/internal/statute"
 	"github.com/miekg/dns"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -29,6 +31,11 @@ func NewResolver(options ...Option) *Resolver {
 			InsecureSkipVerify: true,
 			TLSHostname:        "",
 			Logger:             statute.DefaultLogger{},
+			Dialer:             &dialer.AppDialer{},
+			TLSDialer:          &dialer.AppTLSDialer{},
+			RawDialerFunc:      statute.DefaultDialerFunc,
+			TLSDialerFunc:      statute.DefaultTLSDialerFunc,
+			HttpClient:         statute.DefaultHTTPClient(nil, nil),
 		},
 		cache:  statute.DefaultCache{},
 		logger: statute.DefaultLogger{},
@@ -77,6 +84,30 @@ func WithPrefer(prefer string) Option {
 func WithTLSHostname(tlsHostname string) Option {
 	return func(r *Resolver) {
 		r.options.TLSHostname = tlsHostname
+	}
+}
+
+func WithDialer(d dialer.TDialerFunc) Option {
+	return func(r *Resolver) {
+		r.options.RawDialerFunc = d
+		r.options.HttpClient = statute.DefaultHTTPClient(r.options.RawDialerFunc, r.options.TLSDialerFunc)
+		dialer.RawDialFunc = d
+		r.options.Dialer = &dialer.AppDialer{Timeout: r.options.Timeout}
+	}
+}
+
+func WithTLSDialer(t dialer.TDialerFunc) Option {
+	return func(r *Resolver) {
+		r.options.TLSDialerFunc = t
+		r.options.HttpClient = statute.DefaultHTTPClient(r.options.RawDialerFunc, r.options.TLSDialerFunc)
+		dialer.TLSDialFunc = t
+		r.options.TLSDialer = &dialer.AppTLSDialer{Timeout: r.options.Timeout}
+	}
+}
+
+func WithHttpClient(client *http.Client) Option {
+	return func(r *Resolver) {
+		r.options.HttpClient = client
 	}
 }
 
@@ -142,7 +173,7 @@ func (r *Resolver) SetDNSServer(address string) error {
 		r.logger.Debug("initiating system resolver")
 		r.resolver, err = resolvers.NewSystemResolver(r.options)
 		if nsSrvType == "unknown" {
-			err = errors.New("unknown dns server type! using default system resolver as fallback")
+			r.logger.Error("unknown dns server type! using default system resolver as fallback")
 		}
 	}
 	return err

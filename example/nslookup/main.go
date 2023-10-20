@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/bepass-org/dnsutils"
+	"net"
 	"os"
 	"strings"
 
@@ -14,8 +16,13 @@ var serverAddress string
 var resolver *dnsutils.Resolver
 
 func main() {
-	resolver = dnsutils.NewResolver()
-	err := resolver.SetDNSServer("https://8.8.8.8/dns-query")
+	resolver = dnsutils.NewResolver(
+		dnsutils.WithDialer(func(ctx context.Context, network, addr string) (net.Conn, error) {
+			fmt.Println("Dialing", addr)
+			return net.Dial(network, addr)
+		}),
+	)
+	err := resolver.SetDNSServer("https://1.1.1.1/dns-query")
 	if err != nil {
 		fmt.Println("Error setting DNS server:", err)
 		return

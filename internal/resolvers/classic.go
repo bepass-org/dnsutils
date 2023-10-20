@@ -2,6 +2,7 @@ package resolvers
 
 import (
 	"crypto/tls"
+	"github.com/AdguardTeam/golibs/netutil"
 	"github.com/bepass-org/dnsutils/internal/statute"
 	"net/url"
 	"strings"
@@ -25,28 +26,30 @@ type ClassicResolverOpts struct {
 
 // NewClassicResolver accepts a list of nameservers and configures a DNS resolver.
 func NewClassicResolver(server string, classicOpts ClassicResolverOpts, resolverOpts statute.ResolverOptions) (statute.IResolver, error) {
-	net := "udp"
+	destNet := "udp"
 	client := &dns.Client{
-		Timeout: resolverOpts.Timeout,
-		Net:     "udp",
+		Dialer:    resolverOpts.Dialer,
+		TLSDialer: resolverOpts.TLSDialer,
+		Timeout:   resolverOpts.Timeout,
+		Net:       "udp",
 	}
 
 	if classicOpts.UseTCP {
-		net = "tcp"
+		destNet = "tcp"
 	}
 
 	if resolverOpts.UseIPv4 {
-		net = net + "4"
+		destNet = destNet + "4"
 	}
 	if resolverOpts.UseIPv6 {
-		net = net + "6"
+		destNet = destNet + "6"
 	}
 
-	// if the both use ipv4 and ipv6, then net will be just udp or tcp
-	net = strings.Replace(net, "46", "", -1)
+	// if the both use ipv4 and ipv6, then destNet will be just udp or tcp
+	destNet = strings.Replace(destNet, "46", "", -1)
 
 	if classicOpts.UseTLS {
-		net = net + "-tls"
+		destNet = destNet + "-tls"
 		// Provide extra TLS config for doing/skipping hostname verification.
 		client.TLSConfig = &tls.Config{
 			ServerName:         resolverOpts.TLSHostname,
@@ -54,14 +57,15 @@ func NewClassicResolver(server string, classicOpts ClassicResolverOpts, resolver
 		}
 	}
 
-	client.Net = net
+	client.Net = destNet
 
 	u, err := url.Parse(server)
 	if err != nil {
 		return nil, err
 	}
 
-	if !strings.HasPrefix(server, u.Host+":") {
+	_, err = netutil.ParseHostPort(u.Host)
+	if err != nil {
 		server = server + ":53"
 	}
 
