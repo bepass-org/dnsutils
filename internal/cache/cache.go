@@ -8,14 +8,6 @@ import (
 	"time"
 )
 
-// If whole cache items has equal expiration why Item
-// has Expiration field? and why rely on it?
-// Whats the point of mu?
-// Why Cache type is not interface?
-// Why passing map not by reference?
-// Shouldn't DeleteExpired get called?
-// Shouldn't stopJanitor be Cache method?
-
 var ErrItemDoesntExist = errors.New("item doesn't exist")
 
 // Item represents an item in the cache.
