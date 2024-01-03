@@ -1,11 +1,14 @@
 package cache
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"sync"
 	"time"
 )
+
+var ErrItemDoesntExist = errors.New("item doesn't exist")
 
 // Item represents an item in the cache.
 type Item struct {
@@ -37,15 +40,18 @@ type cache struct {
 
 // Set adds an item to the cache, replacing any existing item.
 func (c *cache) Set(k string, x interface{}) {
-	var e = time.Now().Add(c.expiration).UnixNano()
+	e := int64(0)
+	if c.expiration > 0 {
+		e = time.Now().Add(c.expiration).UnixNano()
+	}
 	c.items.Store(k, &Item{Object: x, Expiration: e})
 }
 
 // Replace sets a new value for the cache key only if it already exists. Returns an error otherwise.
 func (c *cache) Replace(k string, x interface{}) error {
-	item, found := c.Get(k)
+	_, found := c.Get(k)
 	if !found {
-		return fmt.Errorf("item %s doesn't exist", k)
+		return fmt.Errorf("key %s: %w", k, ErrItemDoesntExist)
 	}
 	c.Set(k, x)
 	return nil
@@ -79,10 +85,9 @@ func (c *cache) Delete(k string) {
 
 // DeleteExpired deletes all expired items from the cache.
 func (c *cache) DeleteExpired() {
-	now := time.Now().UnixNano()
 	c.items.Range(func(k, v interface{}) bool {
 		item := v.(*Item)
-		if item.Expiration > 0 && now > item.Expiration {
+		if item.Expired() {
 			c.items.Delete(k)
 		}
 		return true
