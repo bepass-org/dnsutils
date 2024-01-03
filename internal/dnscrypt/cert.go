@@ -8,58 +8,23 @@ import (
 	"time"
 )
 
-// Cert is a DNSCrypt server certificate
-// See ResolverConfig for more info on how to create one
+// Cert represents a DNSCrypt server certificate.
+// For information on creating a certificate, refer to ResolverConfig.
 type Cert struct {
-	// Serial is a 4 byte serial number in big-endian format. If more than
-	// one certificates are valid, the client must prefer the certificate
-	// with a higher serial number.
-	Serial uint32
-
-	// <es-version> ::= the cryptographic construction to use with this
-	// certificate.
-	// For X25519-XSalsa20Poly1305, <es-version> must be 0x00 0x01.
-	// For X25519-XChacha20Poly1305, <es-version> must be 0x00 0x02.
-	EsVersion CryptoConstruction
-
-	// Signature is a 64-byte signature of (<resolver-pk> <client-magic>
-	// <serial> <ts-start> <ts-end> <extensions>) using the Ed25519 algorithm and the
-	// provider secret key. Ed25519 must be used in this version of the
-	// protocol.
-	Signature [ed25519.SignatureSize]byte
-
-	// ResolverPk is the resolver's short-term public key, which is 32 bytes when using X25519.
-	// This key is used to encrypt/decrypt DNS queries
-	ResolverPk [keySize]byte
-
-	// ResolverSk is the resolver's short-term private key, which is 32 bytes when using X25519.
-	// Note that it's only used in the server implementation and never serialized/deserialized.
-	// This key is used to encrypt/decrypt DNS queries
-	ResolverSk [keySize]byte
-
-	// ClientMagic is the first 8 bytes of a client query that is to be built
-	// using the information from this certificate. It may be a truncated
-	// public key. Two valid certificates cannot share the same <client-magic>.
+	Serial      uint32             // 4-byte serial number in big-endian format.
+	EsVersion   CryptoConstruction // Cryptographic construction version.
+	Signature   [ed25519.SignatureSize]byte
+	ResolverPk  [keySize]byte // Resolver's short-term public key (32 bytes when using X25519).
+	ResolverSk  [keySize]byte // Resolver's short-term private key (32 bytes when using X25519).
 	ClientMagic [clientMagicSize]byte
-
-	// NotAfter is the date the certificate is valid from, as a big-endian
-	// 4-byte unsigned Unix timestamp.
-	NotBefore uint32
-
-	// NotAfter is the date the certificate is valid until (inclusive), as a
-	// big-endian 4-byte unsigned Unix timestamp.
-	NotAfter uint32
+	NotBefore   uint32 // Validity start date as a big-endian 4-byte unsigned Unix timestamp.
+	NotAfter    uint32 // Validity end date (inclusive) as a big-endian 4-byte unsigned Unix timestamp.
 }
 
-// Serialize serializes the cert to bytes
-// <cert> ::= <cert-magic> <es-version> <protocol-minor-version> <signature>
-// <resolver-pk> <client-magic> <serial> <ts-start> <ts-end>
-// <extensions>
-// Certificates made of these information, without extensions, are 116 bytes
-// long. With the addition of the cert-magic, es-version and
-// protocol-minor-version, the record is 124 bytes long.
+// Serialize serializes the certificate to bytes.
+// The serialized certificate is 124 bytes long.
 func (c *Cert) Serialize() ([]byte, error) {
-	// validate
+	// Validate the certificate parameters.
 	if c.EsVersion == UndefinedConstruction {
 		return nil, ErrEsVersion
 	}
@@ -68,7 +33,7 @@ func (c *Cert) Serialize() ([]byte, error) {
 		return nil, ErrInvalidDate
 	}
 
-	// start serializing
+	// Start serializing.
 	b := make([]byte, 124)
 
 	// <cert-magic>
@@ -82,14 +47,11 @@ func (c *Cert) Serialize() ([]byte, error) {
 	// signed: (<resolver-pk> <client-magic> <serial> <ts-start> <ts-end> <extensions>)
 	c.writeSigned(b[72:])
 
-	// done
+	// Done.
 	return b, nil
 }
 
-// Deserialize deserializes certificate from a byte array
-// <cert> ::= <cert-magic> <es-version> <protocol-minor-version> <signature>
-// <resolver-pk> <client-magic> <serial> <ts-start> <ts-end>
-// <extensions>
+// Deserialize deserializes a certificate from a byte array.
 func (c *Cert) Deserialize(b []byte) error {
 	if len(b) < 124 {
 		return ErrCertTooShort
@@ -123,38 +85,35 @@ func (c *Cert) Deserialize(b []byte) error {
 	c.NotBefore = binary.BigEndian.Uint32(b[116:120])
 	c.NotAfter = binary.BigEndian.Uint32(b[120:124])
 
-	// Deserialized with no issues
+	// Deserialized with no issues.
 	return nil
 }
 
-// VerifyDate checks that the cert is valid at this moment
+// VerifyDate checks if the certificate is valid at the current moment.
 func (c *Cert) VerifyDate() bool {
 	if c.NotBefore >= c.NotAfter {
 		return false
 	}
 	now := uint32(time.Now().Unix())
-	if now > c.NotAfter || now < c.NotBefore {
-		return false
-	}
-	return true
+	return now <= c.NotAfter && now >= c.NotBefore
 }
 
-// VerifySignature checks if the cert is properly signed with the specified signature
+// VerifySignature checks if the certificate is properly signed with the specified public key.
 func (c *Cert) VerifySignature(publicKey ed25519.PublicKey) bool {
-	b := make([]byte, 52)
-	c.writeSigned(b)
-	return ed25519.Verify(publicKey, b, c.Signature[:])
+	signedData := make([]byte, 52)
+	c.writeSigned(signedData)
+	return ed25519.Verify(publicKey, signedData, c.Signature[:])
 }
 
-// Sign creates cert.Signature
+// Sign creates the certificate signature.
 func (c *Cert) Sign(privateKey ed25519.PrivateKey) {
-	b := make([]byte, 52)
-	c.writeSigned(b)
-	signature := ed25519.Sign(privateKey, b)
+	signedData := make([]byte, 52)
+	c.writeSigned(signedData)
+	signature := ed25519.Sign(privateKey, signedData)
 	copy(c.Signature[:64], signature[:64])
 }
 
-// String Cert's string representation
+// String returns a string representation of the certificate.
 func (c *Cert) String() string {
 	return fmt.Sprintf("Certificate Serial=%d NotBefore=%s NotAfter=%s EsVersion=%s",
 		c.Serial, time.Unix(int64(c.NotBefore), 0).String(),

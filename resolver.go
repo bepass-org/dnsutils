@@ -2,15 +2,17 @@ package dnsutils
 
 import (
 	"errors"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/bepass-org/dnsutils/internal/dialer"
 	"github.com/bepass-org/dnsutils/internal/resolvers"
 	"github.com/bepass-org/dnsutils/internal/statute"
 	"github.com/miekg/dns"
-	"net/http"
-	"strings"
-	"time"
 )
 
+// Resolver handles DNS lookups and caching
 type Resolver struct {
 	options  statute.ResolverOptions
 	resolver statute.IResolver
@@ -19,7 +21,11 @@ type Resolver struct {
 	hosts    statute.Hosts
 }
 
+// NewResolver creates a new Resolver with default options
+// Options can be provided to customize the resolver
 func NewResolver(options ...Option) *Resolver {
+
+	// Create resolver with default options
 	p := &Resolver{
 		options: statute.ResolverOptions{
 			UseIPv4:            false,
