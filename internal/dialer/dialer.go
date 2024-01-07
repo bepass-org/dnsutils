@@ -29,6 +29,7 @@ const (
 type CustomDialer interface {
 	// DialContext is used to establish a connection to a remote address.
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+	Dial(network, address string) (net.Conn, error)
 	// GetTimeout returns the timeout duration for the dialer.
 	GetTimeout() time.Duration
 	// SetTimeout sets the timeout duration for the dialer.
@@ -79,12 +80,34 @@ func (d *appDialer) DialContext(ctx context.Context, network, address string) (n
 	return conn, nil
 }
 
+func (d *appDialer) Dial(network, address string) (net.Conn, error) {
+	return d.DialContext(context.Background(), network, address)
+}
+
 // AppDialer is a custom dialer for non-TLS connections.
 type AppDialer struct {
 	appDialer
 }
 
+func NewAppDialer(timeout time.Duration) *AppDialer {
+	return &AppDialer{
+		appDialer{
+			Timeout:    timeout,
+			DialerType: RawDialer,
+		},
+	}
+}
+
 // AppTLSDialer is a custom dialer for TLS connections.
 type AppTLSDialer struct {
 	appDialer
+}
+
+func NewAppTLSDialer(timeout time.Duration) *AppTLSDialer {
+	return &AppTLSDialer{
+		appDialer{
+			Timeout:    timeout,
+			DialerType: TLSDialer,
+		},
+	}
 }

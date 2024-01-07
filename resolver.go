@@ -37,8 +37,8 @@ func NewResolver(options ...Option) *Resolver {
 			InsecureSkipVerify: true,
 			TLSHostname:        "",
 			Logger:             statute.DefaultLogger{},
-			Dialer:             &dialer.AppDialer{},
-			TLSDialer:          &dialer.AppTLSDialer{},
+			Dialer:             dialer.NewAppDialer(1 * time.Minute),
+			TLSDialer:          dialer.NewAppTLSDialer(1 * time.Minute),
 			RawDialerFunc:      statute.DefaultDialerFunc,
 			TLSDialerFunc:      statute.DefaultTLSDialerFunc,
 			HttpClient:         statute.DefaultHTTPClient(nil, nil),
@@ -98,7 +98,7 @@ func WithDialer(d dialer.TDialerFunc) Option {
 		r.options.RawDialerFunc = d
 		r.options.HttpClient = statute.DefaultHTTPClient(r.options.RawDialerFunc, r.options.TLSDialerFunc)
 		dialer.RawDialFunc = d
-		r.options.Dialer = &dialer.AppDialer{Timeout: r.options.Timeout}
+		r.options.Dialer = dialer.NewAppDialer(r.options.Timeout)
 	}
 }
 
@@ -107,7 +107,7 @@ func WithTLSDialer(t dialer.TDialerFunc) Option {
 		r.options.TLSDialerFunc = t
 		r.options.HttpClient = statute.DefaultHTTPClient(r.options.RawDialerFunc, r.options.TLSDialerFunc)
 		dialer.TLSDialFunc = t
-		r.options.TLSDialer = &dialer.AppTLSDialer{Timeout: r.options.Timeout}
+		r.options.TLSDialer = dialer.NewAppTLSDialer(r.options.Timeout)
 	}
 }
 
